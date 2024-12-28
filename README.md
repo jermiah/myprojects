@@ -60,7 +60,11 @@ This project demonstrates the essential steps to work with Git and GitHub for ma
    - Add new files or create them in the folder using VS Code.
    - Use the following command to add files to the staging area:
      ```bash
-     git add filename.extensionname
+     git add filename.extensionname or git add .
+     ```
+   - add all files together to the staging area:
+     ```bash
+     git add .
      ```
 
 9. **Check Git Status**
@@ -79,6 +83,10 @@ This project demonstrates the essential steps to work with Git and GitHub for ma
     - Push the committed changes to the GitHub repository:
       ```bash
       git push -u origin main
+      ```
+      > Use the `-u` flag for the first push to set the upstream branch. Afterward, you can simply use:
+      ```bash
+      git push
       ```
 
 12. **Pull Changes from GitHub (If Working Collaboratively)**
