@@ -1,7 +1,7 @@
-# **Machine Learning Projects Repository**
+# ** Artificial Intelligence and Machine Learning Projects Repository**
 
 ## **Overview**
-This repository contains machine learning projects that explore various models, techniques, and libraries across different domains. It highlights diverse applications and workflows for solving real-world problems efficiently and effectively.
+This repository contains machine learning and deep learning projects that explore various models, techniques, and libraries across different domains. It highlights diverse applications, including advanced neural networks, and workflows for solving real-world problems efficiently and effectively.
 
 ---
 
@@ -53,7 +53,7 @@ Predicts hospital patient length of stay (LOS) to enhance resource allocation an
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/your-repository-name.git
+   git clone https://github.com/jermiah/mlprojects.git
    ```
 2. Navigate to the desired project directory:
    ```bash
@@ -64,6 +64,10 @@ Predicts hospital patient length of stay (LOS) to enhance resource allocation an
 ---
 
 ## **Additional Resources**
+
+For Git and GitHub setup, refer to the documentation inside the `Docs` folder:
+- [Git Installation and Configuration](https://github.com/jermiah/mlprojects/blob/main/Docs/Github.md)
+- [GitHub Repository Setup](https://github.com/jermiah/mlprojects/blob/main/Docs/Github.md)
 
 For Git and GitHub setup:
 - [Git Installation and Configuration](./docs/git_setup.md)
