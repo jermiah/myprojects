@@ -47,10 +47,8 @@ Predicts hospital patient length of stay (LOS) to enhance resource allocation an
 
 #### **Highlights:**
 - **Data:** Patient and hospital records categorized into 11 LOS classes.
-- **Methods:** Logistic Regression, Random Forest, Gradient Boosting.
-- **Evaluation:** Accuracy, Precision.
-- **Tools:** pandas, scikit-learn, XGBoost, LightGBM, Matplotlib.
-
+- **Methods:** Logistic Regression, Random Forest, Gradient Boosting, LightGBM, CatBoost, SVM, XGBoost.
+- **Evaluation:** Accuracy, Precision, Recall, F1 Score, ROC AUC.
 ---
 
 ## **Upcoming Projects**
@@ -59,10 +57,5 @@ Predicts hospital patient length of stay (LOS) to enhance resource allocation an
 
 ## **Contributing**
 Contributions are welcome! Fork the repository, make your changes, and submit a pull request. For major changes, open an issue for discussion.
-
----
-
-## **License**
-This repository is licensed under the **MIT License**. See the [LICENSE](./LICENSE) file for details.
 
 ---
