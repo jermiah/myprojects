@@ -1,4 +1,4 @@
-# ** Artificial Intelligence and Machine Learning Projects Repository**
+# Artificial Intelligence and Machine Learning Projects
 
 ## **Overview**
 This repository contains machine learning and deep learning projects that explore various models, techniques, and libraries across different domains. It highlights diverse applications, including advanced neural networks, and workflows for solving real-world problems efficiently and effectively.
