@@ -6,7 +6,7 @@ This repository contains machine learning and deep learning projects that explor
 ---
 
 For Git and GitHub setup:
-- [GitHub Repository Setup](./docs/Github.md)
+- [GitHub Repository Setup](./Docs/Github.md)
 
 ## **Project Structure**
 
