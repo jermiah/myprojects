@@ -1,23 +1,23 @@
 # ** Artificial Intelligence and Machine Learning Projects Repository**
 
+## **Overview**
+This repository contains machine learning and deep learning projects that explore various models, techniques, and libraries across different domains. It highlights diverse applications, including advanced neural networks, and workflows for solving real-world problems efficiently and effectively.
+
+---
+
 For Git and GitHub setup:
-- [Git Installation and Configuration](./docs/git_setup.md)
-- [GitHub Repository Setup](./docs/github_setup.md)
+- [GitHub Repository Setup](./docs/Github.md)
 
 ## **Project Structure**
 
 ```plaintext
 /
 ├── README.md         # Main documentation
-├── docs/             # Git and GitHub setup instructions
+├── docs/
+   ├── Github.md         # Git and GitHub setup instructions
 ├── Healthcare - Length of Stay     # A project on predicting the length of stay of a patient
 └── ...
 ```
-
-## **Overview**
-This repository contains machine learning and deep learning projects that explore various models, techniques, and libraries across different domains. It highlights diverse applications, including advanced neural networks, and workflows for solving real-world problems efficiently and effectively.
-
----
 
 ## **Key Features**
 
