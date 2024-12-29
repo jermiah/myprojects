@@ -1,5 +1,19 @@
 # ** Artificial Intelligence and Machine Learning Projects Repository**
 
+For Git and GitHub setup:
+- [Git Installation and Configuration](./docs/git_setup.md)
+- [GitHub Repository Setup](./docs/github_setup.md)
+
+## **Project Structure**
+
+```plaintext
+/
+├── README.md         # Main documentation
+├── docs/             # Git and GitHub setup instructions
+├── Healthcare - Length of Stay     # A project on predicting the length of stay of a patient
+└── ...
+```
+
 ## **Overview**
 This repository contains machine learning and deep learning projects that explore various models, techniques, and libraries across different domains. It highlights diverse applications, including advanced neural networks, and workflows for solving real-world problems efficiently and effectively.
 
@@ -41,51 +55,7 @@ Predicts hospital patient length of stay (LOS) to enhance resource allocation an
 
 ## **Upcoming Projects**
 
-1. Predicting Customer Churn in Telecom
-2. House Price Prediction
-3. Sentiment Analysis
-4. Stock Price Forecasting (Time Series)
-5. Clustering for Targeted Marketing
-
----
-
-## **How to Use This Repository**
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/jermiah/mlprojects.git
-   ```
-2. Navigate to the desired project directory:
-   ```bash
-   cd project-folder
-   ```
-3. Follow the project-specific README for setup and execution.
-
----
-
-## **Additional Resources**
-
-For Git and GitHub setup, refer to the documentation inside the `Docs` folder:
-- [Git Installation and Configuration](https://github.com/jermiah/mlprojects/blob/main/Docs/Github.md)
-- [GitHub Repository Setup](https://github.com/jermiah/mlprojects/blob/main/Docs/Github.md)
-
-For Git and GitHub setup:
-- [Git Installation and Configuration](./docs/git_setup.md)
-- [GitHub Repository Setup](./docs/github_setup.md)
-
----
-
-## **Project Structure**
-
-```plaintext
-/
-├── README.md         # Main documentation
-├── docs/             # Git and GitHub setup instructions
-├── Healthcare - Length of Stay     # A project on predicting the length of stay of a patient
-└── ...
-```
-
----
+1. Covid Cases
 
 ## **Contributing**
 Contributions are welcome! Fork the repository, make your changes, and submit a pull request. For major changes, open an issue for discussion.
