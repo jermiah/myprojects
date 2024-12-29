@@ -12,9 +12,9 @@ For Git and GitHub setup:
 
 ```plaintext
 /
-├── README.md         # Main documentation
+├── README.md                       # Main documentation
 ├── docs/
-   ├── Github.md         # Git and GitHub setup instructions
+   ├── Github.md                    # Git and GitHub setup instructions
 ├── Healthcare - Length of Stay     # A project on predicting the length of stay of a patient
 └── ...
 ```
