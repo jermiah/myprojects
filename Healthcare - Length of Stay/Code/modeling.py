@@ -96,7 +96,11 @@ def evaluate_models(
                 X_train_scaled, X_test_scaled = X_train_non_encoded.copy(), X_test_non_encoded.copy()
                 print(f"Using non-encoded dataset for {model_name}.")
                 if model_name == 'CatBoost' and categorical_columns:
-                    model.set_params(cat_features=categorical_columns)
+                    for col in categorical_columns:
+                        X_train_scaled[col] = X_train_scaled[col].astype(str)
+                        X_test_scaled[col] = X_test_scaled[col].astype(str)
+                    cat_features_indices = [X_train_scaled.columns.get_loc(col) for col in categorical_columns]
+                    model.set_params(cat_features=cat_features_indices)
             elif model_name in ['Logistic Regression', 'SVM']:
                 # Use the encoded dataset and scale numerical features for linear models
                 X_train_scaled = X_train_encoded.copy()
