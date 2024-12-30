@@ -26,7 +26,7 @@ def estimate_training_time(model_name, n_samples, n_features, device):
     """
     # Base time per sample-feature product (empirical values)
     base_time_per_sf = {
-        "Random Forest": 1e-6,  # Empirical base time for Random Forest
+        "Random Forest": 1e-6,  
         "Gradient Boosting": 2e-6,
         "LightGBM": 1e-7 if device == "GPU" else 5e-7,
         "XGBoost": 2e-7 if device == "GPU" else 1e-6,
@@ -44,7 +44,6 @@ def estimate_training_time(model_name, n_samples, n_features, device):
     # Add hardware-dependent scaling factors
     if device == "GPU":
         estimated_time *= 0.5  # Assume GPUs are twice as fast
-
     return estimated_time
 
 
@@ -72,7 +71,10 @@ def detect_device(model_name, gpu_available):
     return "CPU"
 
 # Model evaluation function
-def evaluate_models(X_train_encoded, X_test_encoded, X_train_non_encoded, X_test_non_encoded, y_train, y_test, models, numerical_columns, prev_results_df=None, categorical_columns=None):
+def evaluate_models(
+    X_train_encoded, X_test_encoded, X_train_non_encoded, X_test_non_encoded,
+    y_train, y_test, models, numerical_columns, categorical_columns, prev_results_df=None
+):
     # Check system resources (once per pipeline)
     cores, memory, gpu_available = check_system_resources()  # System check
     
