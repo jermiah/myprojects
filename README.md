@@ -51,7 +51,7 @@ Predicts hospital patient length of stay (LOS) to enhance resource allocation an
 - **Evaluation:** Accuracy, Precision, Recall, F1 Score, ROC AUC.
 ---
 Project Directory:
-- [Patient Length of Stay Prediction](./Healthcare/projectdetails.md)
+-[Patient Length of Stay Prediction](./Healthcare%20-%20Length%20of%20Stay/Projectdetails.md)
 
 ## **Upcoming Projects**
 
