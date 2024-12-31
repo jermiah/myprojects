@@ -3,57 +3,72 @@ import pandas as pd
 
 from sklearn.inspection import permutation_importance
 
-
-def aggregate_feature_importance(models):
+def aggregate_feature_importance(models, X_train_encoded, X_train_non_encoded, selected_models):
     """
-    Aggregates feature importance from multiple models and standardizes feature names.
+    Aggregates feature importance from selected trained models.
 
     Parameters:
-    - models: Dictionary of model names and fitted model objects.
+    - models: Dictionary of trained model names and objects.
+    - X_train_encoded: Encoded training data (for models that require numeric input).
+    - X_train_non_encoded: Non-encoded training data (for models that handle categorical features natively).
+    - selected_models: List of model names for which feature importance should be computed.
 
     Returns:
-    - DataFrame: A table where rows are features, columns are model importance, 
-                 and the last column is the average importance.
+    - Tuple[DataFrame, DataFrame]: Two DataFrames for aggregated feature importances:
+        - One for models using encoded data.
+        - One for models using non-encoded data.
     """
-    combined_df = pd.DataFrame()
+    import pandas as pd
+
+    # Initialize DataFrames for encoded and non-encoded models
+    encoded_df, non_encoded_df = pd.DataFrame(), pd.DataFrame()
 
     for model_name, model in models.items():
-        # Handle CatBoost feature importance
-        if hasattr(model, 'get_feature_importance') and hasattr(model, 'feature_names_'):
-            importances = model.get_feature_importance()
-            features = model.feature_names_
-        elif hasattr(model, 'feature_importances_'):  # Tree-based models
-            importances = model.feature_importances_
-            features = getattr(model, 'feature_names_in_', range(len(importances)))  # Use model's feature names if available
-        elif hasattr(model, 'coef_'):  # Linear models
-            importances = abs(model.coef_[0])  # Use absolute values for coefficients
-            features = range(len(importances))
-        else:
+        if model_name not in selected_models:
             continue
 
-        # Prepare the importance DataFrame
+        print(f"Processing feature importance for: {model_name}")
+
+        # Select appropriate dataset
+        X_train = X_train_non_encoded if model_name in ['CatBoost', 'LightGBM'] else X_train_encoded
+        combined_df = non_encoded_df if model_name in ['CatBoost', 'LightGBM'] else encoded_df
+
+        # Extract feature importance
+        if hasattr(model, "feature_importances_"):
+            importances = model.feature_importances_
+        elif hasattr(model, "get_feature_importance"):
+            importances = model.get_feature_importance()
+        elif hasattr(model, "coef_"):
+            importances = abs(model.coef_[0])
+        else:
+            print(f"Skipping {model_name}: No feature importance available.")
+            continue
+
+        # Create a DataFrame for the model's feature importance
         importance_df = pd.DataFrame({
-            'Feature': features, 
-            'Importance': importances
+            "Feature": X_train.columns,
+            model_name: importances / importances.sum() if importances.sum() != 0 else 0
         })
 
-        # Normalize importance values for this model
-        importance_df['Normalized_Importance'] = importance_df['Importance'] / importance_df['Importance'].sum()
-        importance_df = importance_df.rename(columns={'Normalized_Importance': model_name})
+        # Merge with the appropriate combined DataFrame
+        combined_df = pd.merge(combined_df, importance_df, on="Feature", how="outer") if not combined_df.empty else importance_df
 
-        # Merge with the combined DataFrame
-        combined_df = pd.merge(
-            combined_df, 
-            importance_df[['Feature', model_name]], 
-            on='Feature', 
-            how='outer'
-        ) if not combined_df.empty else importance_df[['Feature', model_name]]
+        # Update the respective DataFrame
+        if model_name in ['CatBoost', 'LightGBM']:
+            non_encoded_df = combined_df
+        else:
+            encoded_df = combined_df
 
-    # Calculate the average importance across all models
-    combined_df['Average_Importance'] = combined_df.drop(columns=['Feature']).mean(axis=1, skipna=True)
-    combined_df = combined_df.sort_values(by='Average_Importance', ascending=False)
+    # Add average importance column to both DataFrames
+    for df in [encoded_df, non_encoded_df]:
+        if not df.empty:
+            df["Average_Importance"] = df.drop(columns=["Feature"]).mean(axis=1, skipna=True)
+            df.sort_values(by="Average_Importance", ascending=False, inplace=True)
 
-    return combined_df
+    return encoded_df, non_encoded_df
+
+
+
 
 
 
