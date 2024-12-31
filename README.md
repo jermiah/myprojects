@@ -50,6 +50,8 @@ Predicts hospital patient length of stay (LOS) to enhance resource allocation an
 - **Methods:** Logistic Regression, Random Forest, Gradient Boosting, LightGBM, CatBoost, SVM, XGBoost.
 - **Evaluation:** Accuracy, Precision, Recall, F1 Score, ROC AUC.
 ---
+Project Directory:
+- [Patient Length of Stay Prediction](./Healthcare/projectdetails.md)
 
 ## **Upcoming Projects**
 
