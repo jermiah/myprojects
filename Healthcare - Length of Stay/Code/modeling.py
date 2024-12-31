@@ -181,7 +181,7 @@ def evaluate_models(
 
 def run_full_pipeline(
     X_train_encoded, X_test_encoded, X_train_non_encoded, X_test_non_encoded,
-    y_train, y_test, numerical_columns, categorical_columns=None, prev_results_df=None
+    y_train, y_test, numerical_columns, categorical_columns, prev_results_df=None
 ):
     print("Function run_full_pipeline reloaded successfully.")
     # Display system resources and determine GPU availability

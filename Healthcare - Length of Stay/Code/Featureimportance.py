@@ -68,10 +68,6 @@ def aggregate_feature_importance(models, X_train_encoded, X_train_non_encoded, s
     return encoded_df, non_encoded_df
 
 
-
-
-
-
 def compute_permutation_importance(selected_models, model_specific_features, X_train, y_train):
     """
     Computes permutation importance for multiple models using their pre-selected features.
