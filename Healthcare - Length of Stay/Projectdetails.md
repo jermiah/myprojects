@@ -32,16 +32,6 @@ The LOS target variable is divided into the following 11 classes:
 10. 91–100 days
 11. More than 100 days
 
-### **Submission Format**
-The output file should contain:
-- `case_id`: Unique ID for each test case.
-- `Stay`: Predicted LOS category for the patient.
-
-### **Evaluation Metric**
-The performance of the predictions is evaluated using **Accuracy Score** multiplied by 100.
-
----
-
 ## **Project Structure**
 The project involves the following steps:
 
@@ -101,10 +91,6 @@ This problem statement and dataset were sourced from a hackathon hosted on **Ana
 
 ---
 
-## **Technology Stack**
-- **Programming Language**: Python
-- **Libraries**: Pandas, NumPy, Scikit-learn, XGBoost, LightGBM, CatBoost, Matplotlib, Seaborn
-- **Tools**: Jupyter Notebook, VS Code, Docker (for deployment)
 
 ---
 
