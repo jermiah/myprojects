@@ -179,8 +179,8 @@ def evaluate_models(
     return results_df_all, trained_models  # Return both results and trained models
 
 
-def run_full_pipeline(
-    X_train_encoded, X_test_encoded, X_train_non_encoded, X_test_non_encoded,
+def model_pipeline(
+    models,X_train_encoded, X_test_encoded, X_train_non_encoded, X_test_non_encoded,
     y_train, y_test, numerical_columns, categorical_columns, prev_results_df=None
 ):
     print("Function run_full_pipeline reloaded successfully.")
@@ -191,14 +191,6 @@ def run_full_pipeline(
     y_train_shifted = y_train - 1
     y_test_shifted = y_test - 1
 
-    # Debug categorical columns
-    if not isinstance(categorical_columns, list):
-        categorical_columns = list(categorical_columns)  # Ensure it is a list
-
-    # Remove 'stay' if it exists in categorical_columns
-    if 'stay' in categorical_columns:
-        categorical_columns.remove('stay')
-        print("Removed 'stay' from categorical_columns.")
 
     # Ensure categorical columns exist in the dataset
     valid_columns = [col for col in categorical_columns if col in X_train_non_encoded.columns.tolist()]
@@ -207,38 +199,6 @@ def run_full_pipeline(
     for col in valid_columns:
         X_train_non_encoded[col] = X_train_non_encoded[col].astype("category")
         X_test_non_encoded[col] = X_test_non_encoded[col].astype("category")
-
-    # Define the models to evaluate
-    models = {
-        'Random Forest': RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1),
-        'LightGBM': lgb.LGBMClassifier(
-            n_jobs=-1, 
-            random_state=42, 
-            device='gpu' if detect_device("LightGBM", gpu_available) == "GPU" else 'cpu',
-            boosting_type='gbdt',
-            categorical_feature=categorical_columns  # Pass categorical columns
-        ),
-        'XGBoost': xgb.XGBClassifier(
-            use_label_encoder=False,
-            eval_metric='mlogloss',
-            n_jobs=-1,
-            tree_method='gpu_hist' if detect_device("XGBoost", gpu_available) == "GPU" else 'auto'
-        ),
-        'Gradient Boosting': GradientBoostingClassifier(random_state=42),
-        'CatBoost': CatBoostClassifier(
-            verbose=0, 
-            random_state=42, 
-            task_type='GPU' if detect_device("CatBoost", gpu_available) == "GPU" else 'CPU'
-        ),
-        'Logistic Regression': OneVsRestClassifier(
-            LogisticRegression(
-                solver='saga', max_iter=500, random_state=42, n_jobs=-1
-            )
-        ),
-        'SVM': OneVsRestClassifier(
-            LinearSVC(random_state=42, max_iter=5000)
-        ),
-    }
 
     # Debug the models dictionary
     print(f"Models defined: {list(models.keys())}")
@@ -258,3 +218,4 @@ def run_full_pipeline(
     )
 
     return results_df_all_models, trained_models
+
