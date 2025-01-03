@@ -1,4 +1,4 @@
-# Length of Stay (LOS) Prediction Project - Under development
+# Length of Stay (LOS) Prediction Project
 
 Codes are available in [LOS Prediction Notebook](./Code)
 
