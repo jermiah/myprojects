@@ -12,6 +12,8 @@ from catboost import CatBoostClassifier
 import pandas as pd
 import os
 import numpy as np
+from sklearn.base import clone
+import traceback
 
 def estimate_training_time(model_name, n_samples, n_features, device):
     """
@@ -90,6 +92,8 @@ def evaluate_models(
         print(f"\nStarting {model_name} on {device}...")
 
         try:
+            # Clone the model to avoid modifying the original instance
+            model = clone(model)
             # Determine whether to use encoded or non-encoded data
             if model_name in ['CatBoost', 'LightGBM']:
                 # Use the non-encoded dataset
