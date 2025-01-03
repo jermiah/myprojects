@@ -2,14 +2,12 @@
 
 Codes are available in [LOS Prediction Notebook](./Code)
 
-## **Problem Statement**
-The recent COVID-19 pandemic has highlighted the importance of effective healthcare management. One critical aspect of healthcare management is the **Length of Stay (LOS)** of patients. Accurately predicting LOS can significantly improve hospital efficiency by aiding in resource allocation, room and bed planning, and minimizing risks such as staff and visitor infection.
+## **Introduction**
+This analysis focuses on predicting Patients' Length of Stay (LOS) during the COVID-19 Pandemic. The COVID-19 pandemic overloaded hospital care resources and efficient resource management and allocation are vital to stablizing the healthcare system. The objective of this analysis is to develop machine learning models to predict LOS to help improve resource allocation since LOS is an important indiactor for monitoring health management processes.
 
-This project focuses on predicting the LOS for each patient at the time of admission to optimize treatment plans and streamline hospital operations. The goal is to classify LOS into one of 11 categories, ranging from **0–10 days** to **more than 100 days**.
+Dataset: The dataset comes from Kaggle. A version of the dataset was originally used for Analytics Vidhya Healthcare Analytics Hackathon. The target variable for the dataset is Stay Days which is categorical with 9 categories representing range of days (length of stay in the hospital) between 0 to 100+ days.
 
-You are tasked with solving this problem as a **Data Scientist** for **HealthMan**, a non-profit organization dedicated to professional hospital management.
-
----
+This analysis is an extension as well as a response to an analysis performed by The Jianing Pei et al. which uses the Analytics Vidha Healthcare Analytics Hackathon dataset to predict patient's length of stay. In their analysis, their models achieved an accuracy score of 0.3541 using an optimized Random Forest algorithm. 
 
 ## **Data Description**
 The project uses the following datasets:
