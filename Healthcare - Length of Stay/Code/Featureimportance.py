@@ -44,6 +44,12 @@ def aggregate_feature_importance(models, X_train_encoded, X_train_non_encoded, s
             print(f"Skipping {model_name}: No feature importance available.")
             continue
 
+        # Validate feature importance length
+        if len(importances) != X_train.shape[1]:
+            print(f"Skipping {model_name}: Feature importance length ({len(importances)}) "
+                  f"does not match number of features ({X_train.shape[1]}).")
+            continue
+
         # Create a DataFrame for the model's feature importance
         importance_df = pd.DataFrame({
             "Feature": X_train.columns,
@@ -60,12 +66,14 @@ def aggregate_feature_importance(models, X_train_encoded, X_train_non_encoded, s
             encoded_df = combined_df
 
     # Add average importance column to both DataFrames
-    for df in [encoded_df, non_encoded_df]:
+    for df_name, df in [("Encoded DataFrame", encoded_df), ("Non-Encoded DataFrame", non_encoded_df)]:
         if not df.empty:
             df["Average_Importance"] = df.drop(columns=["Feature"]).mean(axis=1, skipna=True)
             df.sort_values(by="Average_Importance", ascending=False, inplace=True)
+            print(f"{df_name} processed. Total features: {df.shape[0]}.")
 
     return encoded_df, non_encoded_df
+
 
 
 def compute_permutation_importance(selected_models, model_specific_features, X_train, y_train):

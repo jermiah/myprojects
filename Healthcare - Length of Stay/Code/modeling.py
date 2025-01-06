@@ -14,6 +14,7 @@ import os
 import numpy as np
 from sklearn.base import clone
 import traceback
+import joblib
 
 def estimate_training_time(model_name, n_samples, n_features, device):
     """
@@ -187,9 +188,8 @@ def model_pipeline(
     models,X_train_encoded, X_test_encoded, X_train_non_encoded, X_test_non_encoded,
     y_train, y_test, numerical_columns, categorical_columns, prev_results_df=None
 ):
-    print("Function run_full_pipeline reloaded successfully.")
-    # Display system resources and determine GPU availability
-    cores, memory, gpu_available = check_system_resources()
+    print("Function model_pipeline loaded successfully.")
+   
 
     # Adjust target labels to start from 0 if needed (for multiclass compatibility)
     y_train_shifted = y_train - 1
@@ -223,3 +223,21 @@ def model_pipeline(
 
     return results_df_all_models, trained_models
 
+import joblib
+
+def save_models(models, prefix=""):
+    """
+    Save trained models to disk.
+    
+    Args:
+        models (dict): Dictionary with model names as keys and model objects as values.
+        prefix (str): Prefix to distinguish file names (e.g., "trained_", "retrained_").
+    """
+    if not models:
+        print("No models to save.")
+        return
+    
+    for model_name, model in models.items():
+        filename = f"{prefix}{model_name}_model.pkl"
+        joblib.dump(model, filename)
+        print(f"Saved {prefix}{model_name} model to disk.")
