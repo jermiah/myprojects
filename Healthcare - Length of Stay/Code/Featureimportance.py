@@ -1,7 +1,7 @@
+from sklearn.inspection import permutation_importance
 import pandas as pd
 
 
-from sklearn.inspection import permutation_importance
 
 def aggregate_feature_importance(models, X_train_encoded, X_train_non_encoded, selected_models):
     """
@@ -76,45 +76,52 @@ def aggregate_feature_importance(models, X_train_encoded, X_train_non_encoded, s
 
 
 
-def compute_permutation_importance(selected_models, model_specific_features, X_train, y_train):
+
+def calculate_permutation_importance(model, feature_sets, X_test, y_test):
     """
-    Computes permutation importance for multiple models using their pre-selected features.
+    Calculates permutation importance for selected models and features.
 
     Parameters:
-    - selected_models: dict of trained models (e.g., {"Gradient Boosting": model1, ...}).
-    - model_specific_features: dict of selected features for each model (e.g., {"Gradient Boosting": feature_list1, ...}).
-    - X_train: DataFrame containing the training features.
-    - y_train: Series or array containing the training target variable.
+    - models: Dictionary of selected models (e.g., {"ModelName": model_object}).
+    - feature_sets: Dictionary of feature sets corresponding to each model.
+    - X_train: Training features (DataFrame).
+    - y_train: Training target (Series or array).
+    - X_test: Test features (DataFrame).
+    - y_test: Test target (Series or array).
 
     Returns:
-    - permutation_results: dict of DataFrames with permutation importance scores for each model.
+    - DataFrame: Aggregated permutation importance for each model.
     """
-    # Initialize a dictionary to store results
-    permutation_results = {}
+    # Initialize an empty DataFrame to store permutation importances
+        perm_df = pd.DataFrame()
 
-    # Compute permutation importance for each model
-    for model_name, model in selected_models.items():
-        print(f"Computing permutation importance for {model_name}...")
-        
-        # Get the features specific to the current model
-        specific_features = model_specific_features[model_name]
-        X_train_filtered = X_train[specific_features]  # Filter training data to these features
-        
-        # Compute permutation importance
-        perm_importance = permutation_importance(
-            model, X_train_filtered, y_train, scoring="accuracy", random_state=42
+ 
+
+        # Get the features specific to the model
+        selected_features = feature_sets[model_name]
+        X_test_selected = X_test[selected_features]
+
+        # Calculate permutation importance
+        perm = permutation_importance(
+            model,
+            X_test_selected,
+            y_test,
+            n_repeats=100,  # Number of shuffles
+            random_state=42,
+            scoring="f1",  # Adjust scoring metric as needed
         )
-        
-        # Create a DataFrame for the results
-        perm_importance_df = pd.DataFrame({
-            "Feature": X_train_filtered.columns,
-            "Importance": perm_importance.importances_mean
-        }).sort_values(by="Importance", ascending=False)
-        
-        # Store the results in the dictionary
-        permutation_results[model_name] = perm_importance_df
 
-        # Print the top features for this model
-        print(f"Top features for {model_name} based on permutation importance:\n{perm_importance_df}")
+        # Create a DataFrame for the model's permutation importance
+        perm_df = pd.DataFrame({
+            "Feature": selected_features,
+            "Importance Mean": perm.importances_mean
+        })
 
-    return permutation_results
+
+
+
+        perm_df.sort_values(by="Average_Importance", ascending=False, inplace=True)
+
+        print(f"Permutation importance calculation completed. Total features: {perm_df.shape[0]}.")
+
+    return perm_df
