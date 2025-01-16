@@ -55,7 +55,7 @@ Project Directory:
 
 ## **Upcoming Projects**
 
-1. Covid Cases
+1. Bankruptcy Prediction
 
 ## **Contributing**
 Contributions are welcome! Fork the repository, make your changes, and submit a pull request. For major changes, open an issue for discussion.
