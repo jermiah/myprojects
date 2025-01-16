@@ -50,47 +50,9 @@ The project involves the following steps:
    - Generate LOS predictions for test cases.
    - Create a submission file in the required format.
 
----
-
-## **Key Inferences from Model Evaluation - Under Development**
-### **Model Evaluation Results**
-The following insights were derived from training and evaluating models:
-
-- **CatBoost**:
-  - Achieved the best ROC AUC during hyperparameter tuning.
-  - Model performance on the test set:
-    - Accuracy
-    - Precision
-    - Recall
-    - F1 Score
-
-- **LightGBM**:
-  - Achieved the second-best ROC AUC.
-  - Model performance on the test set:
-    - Accuracy
-    - Precision
-    - Recall
-    - F1 Score
-
-- **XGBoost**:
-  - Delivered comparable results with an ROC AUC.
-  - Model performance on the test set:
-    - Accuracy
-    - Precision
-    - Recall
-    - F1 Score
-
-These results highlight the effectiveness of CatBoost, LightGBM, and XGBoost for this multiclass classification problem, with CatBoost being the most promising model.
-
----
-
 ## **Acknowledgements**
 This problem statement and dataset were sourced from a hackathon hosted on **Analytics Vidhya**. You can find more details about the challenge [here](https://datahack.analyticsvidhya.com/contest/janatahack-healthcare-analytics-ii/#ProblemStatement).
 
----
-
-
----
 
 ## **Purpose**
 This project demonstrates the application of **machine learning in healthcare analytics**, showcasing how data-driven decisions can improve operational efficiency and patient care in hospitals.
