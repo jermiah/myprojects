@@ -77,7 +77,7 @@ def aggregate_feature_importance(models, X_train_encoded, X_train_non_encoded, s
 
 
 
-def calculate_permutation_importance(model, feature_sets, X_test, y_test):
+def calculate_permutation_importance(model_name, feature_sets, X_test, y_test):
     """
     Calculates permutation importance for selected models and features.
 

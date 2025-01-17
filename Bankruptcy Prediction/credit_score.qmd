@@ -1,0 +1,1387 @@
+---
+title: "Bankruptcy"
+author: "jermiah jerome"
+
+date: "`r Sys.Date()`"
+format: html
+execute:
+  warning: false       # Suppress warnings globally
+  message: false       # Suppress messages globally
+editor: visual  
+toc: true
+toc-depth: 3 
+output:
+  html: 
+    toc: true
+    toc-title: "Table of Contents"
+---
+
+## Packages
+
+```{r, warning=FALSE, message=FALSE}
+# List of required packages
+required_packages <- c(
+  "tidyverse", "tidymodels", "xgboost", "themis", 
+  "ggplot2", "reticulate", "purrr","DT"
+)
+
+# Function to check and install missing packages
+install_if_missing <- function(packages) {
+  for (pkg in packages) {
+    if (!require(pkg, character.only = TRUE)) {
+      install.packages(pkg, dependencies = TRUE)
+      library(pkg, character.only = TRUE)
+    }
+  }
+}
+
+# Install missing packages
+install_if_missing(required_packages)
+
+```
+
+## Library
+
+```{r,warning=FALSE, message=FALSE}
+library(tidyverse)                 # Data wrangling
+library(tidymodels)
+library(tidyverse)
+library(tidymodels)
+library(xgboost)
+library(ggplot2)
+library(reticulate)
+library(dplyr)
+library(psych)
+library(dplyr)
+library(corrplot)
+library(purrr)
+library(tidymodels)
+library(themis)       # For SMOTE
+library(caret)        # For data splitting
+library(dplyr)        # For data manipulation
+library(caret)
+library(parallel)
+library(doParallel)
+library(glmnet)
+
+```
+
+## Loading Dataset
+
+```{r}
+load("bankruptcy.RData")
+```
+
+```{r}
+bankruptcy_df <- bankruptcy  #creating a copy of orginal df
+```
+
+## EDA
+
+### Data Types
+
+```{r}
+glimpse(bankruptcy_df)
+```
+
+```{r}
+head(bankruptcy_df)
+```
+
+### Missing Data
+
+```{r}
+col_missing <- sapply(bankruptcy_df, function(x) sum(is.na(x)))
+columns_with_missing <- names(col_missing[col_missing > 0])
+print(columns_with_missing)
+```
+
+```{r}
+sum(duplicated(bankruptcy_df))
+```
+
+### Column Names Conversion
+
+```{r}
+colnames(bankruptcy_df) <- tolower(gsub(" ", "_", colnames(bankruptcy_df)))
+```
+
+```{r}
+colnames(bankruptcy_df)
+```
+
+### Features Exploration
+
+```{r}
+unique_values_distinct <- bankruptcy_df |>
+  select(contains("flag")) |>
+  summarise(across(everything(), ~ unique(.))) |>
+  pivot_longer(everything(), names_to = "column", values_to = "unique_values") |>
+  distinct()
+
+print(unique_values_distinct)
+```
+
+### Target Proportion
+
+```{r}
+# Calculate proportions
+proportions <- prop.table(table(bankruptcy_df$`bankrupt?`))
+
+# Convert proportions to a data frame for ggplot
+proportions_df <- as.data.frame(proportions)
+colnames(proportions_df) <- c("Status", "Proportion")
+
+# Replace 0 and 1 with descriptive labels
+proportions_df$Status <- factor(proportions_df$Status, 
+                                 levels = c(0, 1), 
+                                 labels = c("Financially Stable", "Bankrupt"))
+
+# Create bar graph
+ggplot(proportions_df, aes(x = Status, y = Proportion, fill = Status)) +
+  geom_bar(stat = "identity", width = 0.5) +
+  geom_text(aes(label = scales::percent(Proportion)), 
+            vjust = -0.5, size = 2) +  # Position labels above the bars
+  labs(title = "Proportion of Financial Stability", 
+       x = "Status", 
+       y = "Proportion") +
+  scale_y_continuous(labels = scales::percent) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+### Describe Dataset
+
+```{r}
+describe(bankruptcy_df)
+```
+
+### Histogram
+
+```{r}
+numeric_columns <- select_if(bankruptcy_df, is.numeric)
+col_groups <- split(colnames(bankruptcy_df), ceiling(seq_along(colnames(bankruptcy_df)) / 10))  # 10 variables per group
+
+# Create plots for each group
+for (i in seq_along(col_groups)) {
+  group_data <- bankruptcy_df[, col_groups[[i]], drop = FALSE]
+  numeric_data <- pivot_longer(group_data, cols = everything(), names_to = "Variable", values_to = "Value")
+  
+  # Create the plot for the current group
+  plot <- ggplot(numeric_data, aes(x = Value)) +
+    geom_histogram(bins = 20, color = "black", fill = "blue", alpha = 0.7) +
+    facet_wrap(~ Variable, scales = "free") +
+    labs(title = paste("Histograms of Numeric Variables (Group", i, ")"),
+         x = "Value", y = "Frequency") +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(hjust = 0.2, size = 8),  # Reduced title size
+      strip.text = element_text(size = 5)               # Adjusted facet label size
+    )
+  
+  print(plot)  # Display the plot
+}
+```
+
+## Correlation
+
+```{r}
+# Identify columns with more than 2 unique values
+columns_with_unique_values <- sapply(bankruptcy_df, function(x) length(unique(x)) > 2)
+
+# Filter the DataFrame to keep only those columns
+filtered_bankruptcy_df <- bankruptcy_df[, columns_with_unique_values]
+
+# Drop columns with zero standard deviation
+zero_sd_cols <- sapply(filtered_bankruptcy_df, function(x) sd(x, na.rm = TRUE) == 0)
+bankruptcy_df_filtered <- filtered_bankruptcy_df[, !zero_sd_cols]
+
+# Ensure only numeric columns are used for correlation computation
+numeric_cols <- sapply(bankruptcy_df_filtered, is.numeric)
+numeric_bankruptcy_df <- bankruptcy_df_filtered[, numeric_cols]
+
+# Compute the Spearman correlation matrix
+cor_matrix <- cor(numeric_bankruptcy_df, method = "spearman", use = "pairwise.complete.obs")
+
+# Convert the correlation matrix to a data frame
+correlation_df <- as.data.frame(as.table(cor_matrix)) %>%
+  rename(Feature1 = Var1, Feature2 = Var2, Correlation = Freq)
+
+# Remove self-correlations and duplicate pairs
+correlation_df <- correlation_df %>%
+  filter(Feature1 != Feature2) %>%                    # Exclude self-correlations
+  mutate(Pair = pmap_chr(list(Feature1, Feature2), ~ paste(sort(c(.x, .y)), collapse = "_"))) %>%
+  distinct(Pair, .keep_all = TRUE) %>%                # Remove duplicate pairs
+  select(-Pair)                                       # Drop the temporary 'Pair' column
+
+```
+
+```{r}
+# Filter for positive correlations, exclude same variables, and sort in descending order
+positive_correlations <- correlation_df %>%
+  filter(Feature1 != Feature2) %>%           # Exclude correlations of the same variable
+  filter(Correlation > 0) %>%                # Keep only positive correlations
+  arrange(desc(Correlation))                 # Sort by Correlation in descending order
+
+# Render the scrollable table
+datatable(
+  positive_correlations,
+  options = list(
+    scrollX = TRUE,   # Enable horizontal scrolling
+    pageLength = 20,  # Show 20 rows per page
+    dom = "Bfrtip"    # Control table elements (buttons, filter, etc.)
+  ),
+  rownames = FALSE   # Remove row numbers
+)
+```
+
+```{r}
+# Filter for negative correlations, exclude same variables, and sort in ascending order
+negative_correlations <- correlation_df %>%
+  filter(Feature1 != Feature2) %>%           # Exclude correlations of the same variable
+  filter(Correlation < 0) %>%                # Keep only negative correlations
+  arrange(Correlation)                       # Sort by Correlation (ascending for negatives)
+
+# Render the scrollable table
+datatable(
+  negative_correlations,
+  options = list(
+    scrollX = TRUE,   # Enable horizontal scrolling
+    pageLength = 20,  # Show 20 rows per page
+    dom = "Bfrtip"    # Table elements like buttons, filter, etc.
+  ),
+  rownames = FALSE    # Remove row numbers
+)
+
+
+```
+
+```{r}
+#| fig-width: 15
+#| fig-height: 10
+#| fig-align: center
+
+# Combine positive and negative correlations
+combined_correlations <- bind_rows(positive_correlations, negative_correlations) %>%
+  mutate(Pair = paste(Feature1, "-", Feature2))  # Combine Feature1 and Feature2 into a label
+
+# Get top 25 positive correlations
+top_25_positive <- combined_correlations %>%
+  filter(Correlation > 0) %>%
+  arrange(desc(Correlation)) %>%
+  slice_head(n = 25)
+
+# Get top 25 negative correlations
+top_25_negative <- combined_correlations %>%
+  filter(Correlation < 0) %>%
+  arrange(Correlation) %>%
+  slice_head(n = 25)
+
+# Combine top positive and negative correlations
+top_50_correlations <- bind_rows(top_25_positive, top_25_negative)
+
+# Plot the distribution-like bar plot
+ggplot(top_50_correlations, aes(x = reorder(Pair, Correlation), y = Correlation, fill = Correlation > 0)) +
+  geom_bar(stat = "identity", width = 0.7) +  # Fixed missing "+"
+  scale_fill_manual(values = c("TRUE" = "green", "FALSE" = "red"), guide = FALSE) +
+  coord_flip() +
+  labs(
+    title = "Top 25 Positive and Negative Correlations",
+    x = "Feature Pairs",
+    y = "Correlation Coefficient"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(size = 10),
+    axis.title.y = element_text(face = "bold"),
+    axis.title.x = element_text(face = "bold")
+  )
+
+```
+
+## Dropping Variables
+
+### Features Redundancy
+
+```{r}
+# Inspect column names
+column_names <- colnames(bankruptcy_df)
+
+# Define patterns for similar context
+pattern_groups <- list(
+  liabilities = grep("liabilit", column_names, value = TRUE, ignore.case = TRUE),
+  equity = grep("equity", column_names, value = TRUE, ignore.case = TRUE),
+  assets = grep("asset", column_names, value = TRUE, ignore.case = TRUE),
+  profit = grep("profit", column_names, value = TRUE, ignore.case = TRUE),
+  cash_flow = grep("cash", column_names, value = TRUE, ignore.case = TRUE),
+  turnover = grep("turnover", column_names, value = TRUE, ignore.case = TRUE)
+)
+
+# Print grouped column names
+pattern_groups
+
+
+
+```
+
+### **Liabilities**
+
+#### **Variables**:
+
+-   `"current_liabilities/equity"`
+
+-   `"current_liability_to_equity"`
+
+-   `"liability_to_equity"`
+
+#### **Reasoning Evaluation**:
+
+##### **1. Similarity**
+
+-   **`current_liabilities/equity`**:
+
+    -   Measures the proportion of **current liabilities** (short-term obligations) to **equity**.
+
+    -   Focused specifically on short-term obligations but doesn’t provide a holistic view of leverage.
+
+-   **`current_liability_to_equity`**:
+
+    -   Similar to `"current_liabilities/equity"` but uses a slightly different representation.
+
+    -   Redundant in meaning and adds no extra insight.
+
+-   **`liability_to_equity`**:
+
+    -   Measures the proportion of **total liabilities** (short-term + long-term) to equity.
+
+    -   This is a **comprehensive measure of leverage**, capturing the company’s total financial risk.
+
+##### **2. Domain Relevance**
+
+-   Bankruptcy models prioritize metrics that capture **total financial risk** over narrow measures of short-term obligations.
+
+-   `"current_liabilities/equity"` and `"current_liability_to_equity"` focus only on **current liabilities**, leading to redundancy when `"liability_to_equity"` is already included.
+
+-   **`liability_to_equity`** is the standard metric used in leverage analysis and is more widely applicable.
+
+##### **3. Bankruptcy Context**
+
+-   Leverage is critical in bankruptcy prediction as high leverage often indicates financial distress.
+
+-   `"liability_to_equity"` provides a complete picture of the company’s financial structure, balancing obligations against equity, whereas `"current_liabilities/equity"` is limited in scope.
+
+#### **Decision**:
+
+-   **Keep**: `"liability_to_equity"` because it provides a holistic view of leverage and aligns with financial distress prediction.
+
+-   **Drop**:
+
+    -   `"current_liabilities/equity"` (narrow focus).
+
+    -   `"current_liability_to_equity"` (redundant metric).
+
+```{r}
+# Correlation check for liabilities
+liabilities_vars <- c("current_liabilities/equity", "current_liability_to_equity", "liability_to_equity")
+
+liabilities_correlations <- correlation_df %>%
+  filter(Feature1 %in% liabilities_vars & Feature2 %in% liabilities_vars)
+
+print(liabilities_correlations)
+
+
+
+```
+
+```{r}
+# Drop redundant liabilities variables
+bankruptcy_df <- bankruptcy_df %>%
+  select(-c("current_liabilities/equity", "current_liability_to_equity"))
+dim(bankruptcy_df)
+
+```
+
+### **Equity**
+
+#### **Variables**:
+
+-   `"liability_to_equity"`
+
+-   `"equity_to_liability"`
+
+#### **Reasoning Evaluation**:
+
+##### **1. Similarity**
+
+-   **`liability_to_equity`**:
+
+    -   Measures the proportion of total liabilities to equity.
+
+    -   Directly represents leverage and is widely used in financial analysis.
+
+-   **`equity_to_liability`**:
+
+    -   Measures the proportion of equity to liabilities. It’s an **inverse** of `"liability_to_equity"`.
+
+    -   Adds no additional value since the same insight can be obtained by interpreting `"liability_to_equity"` inversely.
+
+##### **2. Domain Relevance**
+
+-   **`liability_to_equity`** is more intuitive and standard in financial analysis. It aligns with established leverage metrics, making it easier for interpretation and comparison across companies.
+
+-   **`equity_to_liability`** is less common and redundant.
+
+##### **3. Bankruptcy Context**
+
+-   High leverage (measured by `"liability_to_equity"`) is a key indicator of financial distress.
+
+-   Including `"equity_to_liability"` is unnecessary since it duplicates the information provided by `"liability_to_equity"`.
+
+#### **Decision**:
+
+-   **Keep**: `"liability_to_equity"` for its standard use and relevance.
+
+-   **Drop**:
+
+    -   `"equity_to_liability"` (redundant inverse metric).
+
+```{r}
+# Correlation check for equity
+equity_vars <- c("liability_to_equity", "equity_to_liability")
+
+equity_correlations <- correlation_df %>%
+  filter(Feature1 %in% equity_vars & Feature2 %in% equity_vars)
+
+print(equity_correlations)
+
+```
+
+```{r}
+# Drop redundant equity variable
+bankruptcy_df <- bankruptcy_df %>%
+  select(-c("equity_to_liability"))
+
+dim(bankruptcy_df)
+```
+
+### **Assets**
+
+#### **Variables**:
+
+-   `"quick_assets/total_assets"`
+
+-   `"working_capital_to_total_assets"`
+
+-   `"current_assets/total_assets"`
+
+#### **Reasoning Evaluation**
+
+##### **1. Similarity**
+
+-   **`quick_assets/total_assets`**:
+
+    -   Measures the proportion of assets that are liquid (e.g., cash, receivables, etc.) relative to total assets.
+
+    -   **Excludes inventory**, focusing solely on liquidity.
+
+    -   Provides a **narrow view** of liquidity.
+
+-   **`working_capital_to_total_assets`**:
+
+    -   Measures net liquidity (current assets - current liabilities) relative to total assets.
+
+    -   Incorporates **liabilities**, adding complexity and overlapping with other liability-related ratios.
+
+-   **`current_assets/total_assets`**:
+
+    -   Measures the proportion of **current assets** (cash, inventory, receivables, etc.) relative to total assets.
+
+    -   A **general and comprehensive measure** of liquidity that includes inventory and receivables, providing a clearer picture of a company's short-term asset base.
+
+##### **2. Domain Relevance**
+
+-   **Liquidity** is critical in bankruptcy analysis as it reflects a company's ability to meet short-term obligations. However:
+
+    -   **`quick_assets/total_assets`** is **too narrow** because it excludes inventory, which is an important part of current assets.
+
+    -   **`working_capital_to_total_assets`** involves liabilities, potentially **overlapping with liability-related ratios**, such as `"liability_to_equity"`.
+
+    -   **`current_assets/total_assets`** is **simple and interpretable**, capturing a broad measure of liquidity without adding unnecessary complexity.
+
+##### **3. Bankruptcy Context**
+
+-   The **Altman Z-Score**, a widely used bankruptcy prediction model, includes a similar metric to `"current_assets/total_assets"` for liquidity assessment.
+
+-   This variable gives a clear and intuitive measure of a firm's liquidity relative to total assets, making it ideal for bankruptcy prediction models.
+
+#### **Decision**
+
+-   **Keep**: `"current_assets/total_assets"`:
+
+    -   It provides a general, intuitive, and interpretable measure of liquidity.
+
+    -   Aligns with financial analysis and bankruptcy modeling principles.
+
+-   **Drop**:
+
+    -   `"quick_assets/total_assets"`:
+
+        -   **Too narrow** in focus; excludes inventory.
+
+    -   `"working_capital_to_total_assets"`:
+
+        -   **Overlaps with liability-related metrics**, making it redundant.
+
+```{r}
+# Correlation check for assets group
+assets_vars <- c("quick_assets/total_assets", "working_capital_to_total_assets", "current_assets/total_assets")
+
+assets_correlations <- correlation_df %>%
+  filter(Feature1 %in% assets_vars & Feature2 %in% assets_vars)
+
+print(assets_correlations)
+
+```
+
+```{r}
+# Drop redundant assets variables
+bankruptcy_df <- bankruptcy_df %>%
+  select(-c("quick_assets/total_assets", "working_capital_to_total_assets"))
+dim(bankruptcy_df)
+
+```
+
+### **Profit**
+
+#### **Variables**:
+
+-   `"operating_profit_per_share_(yuan_¥)"`
+
+-   `"per_share_net_profit_before_tax_(yuan_¥)"`
+
+#### **Reasoning Evaluation**:
+
+##### **1. Similarity**
+
+-   **`operating_profit_per_share_(yuan_¥)`**:
+
+    -   Focuses only on operating profit per share, ignoring other income or expenses.
+
+    -   Narrow in scope, limited to core operations.
+
+-   **`per_share_net_profit_before_tax_(yuan_¥)`**:
+
+    -   Includes all sources of profit (operating and non-operating) before tax on a per-share basis.
+
+    -   More comprehensive and represents overall profitability.
+
+##### **2. Domain Relevance**
+
+-   **`per_share_net_profit_before_tax_(yuan_¥)`** captures a company’s total profitability before tax, making it more relevant for assessing financial performance.
+
+-   **`operating_profit_per_share_(yuan_¥)`** is narrower and overlaps with other operating profit metrics.
+
+##### **3. Bankruptcy Context**
+
+-   Net profit before tax is a stronger indicator of financial health in bankruptcy analysis as it accounts for all sources of income and expenses.
+
+#### **Decision**:
+
+-   **Keep**: `"per_share_net_profit_before_tax_(yuan_¥)"` for its comprehensiveness.
+
+-   **Drop**:
+
+    -   `"operating_profit_per_share_(yuan_¥)"` (too narrow).
+
+```{r}
+# Correlation check for profit
+profit_vars <- c("operating_profit_per_share_(yuan_¥)", "per_share_net_profit_before_tax_(yuan_¥)")
+
+profit_correlations <- correlation_df %>%
+  filter(Feature1 %in% profit_vars & Feature2 %in% profit_vars)
+
+print(profit_correlations)
+```
+
+```{r}
+# Correlation check for profit
+profit_vars <- c("operating_profit_per_share_(yuan_¥)", "per_share_net_profit_before_tax_(yuan_¥)")
+
+profit_correlations <- correlation_df %>%
+  filter(Feature1 %in% profit_vars & Feature2 %in% profit_vars)
+
+print(profit_correlations)
+```
+
+```{r}
+# Drop redundant profit variable
+bankruptcy_df <- bankruptcy_df %>%
+  select(-c("operating_profit_per_share_(yuan_¥)"))
+```
+
+### **Cash Flow**
+
+#### **Variables**:
+
+-   `"cash_flow_to_total_assets"`
+
+-   `"cash_flow_to_equity"`
+
+-   `"cash_flow_to_liability"`
+
+#### **Reasoning Evaluation**:
+
+##### **1. Similarity**
+
+-   **`cash_flow_to_total_assets`**:
+
+    -   Measures the efficiency of cash flow relative to total assets.
+
+    -   A holistic and general measure of liquidity and operational efficiency.
+
+-   **`cash_flow_to_equity`**:
+
+    -   Measures cash flow relative to equity, focusing on returns for shareholders.
+
+-   **`cash_flow_to_liability`**:
+
+    -   Measures cash flow relative to liabilities, focusing on debt coverage.
+
+##### **2. Domain Relevance**
+
+-   **`cash_flow_to_total_assets`** is the most general and interpretable. It avoids overlaps with liability or equity ratios, which are measured separately.
+
+-   **`cash_flow_to_equity`** and **`cash_flow_to_liability`** are narrower and redundant.
+
+##### **3. Bankruptcy Context**
+
+-   A broad cash flow measure, like `"cash_flow_to_total_assets"`, is more relevant for assessing a company's ability to sustain operations.
+
+#### **Decision**:
+
+-   **Keep**: `"cash_flow_to_total_assets"` for its comprehensiveness.
+
+-   **Drop**:
+
+    -   `"cash_flow_to_equity"`, `"cash_flow_to_liability"` (too narrow).
+
+```{r}
+# Correlation check for cash flow
+cash_flow_vars <- c("cash_flow_to_total_assets", "cash_flow_to_equity", "cash_flow_to_liability")
+
+cash_flow_correlations <- correlation_df %>%
+  filter(Feature1 %in% cash_flow_vars & Feature2 %in% cash_flow_vars)
+
+print(cash_flow_correlations)
+
+# Drop redundant cash flow variables
+bankruptcy_df <- bankruptcy_df %>%
+  select(-c("cash_flow_to_equity", "cash_flow_to_liability"))
+
+```
+
+### **Liquidity Variables**
+
+#### **Variables**:
+
+-   `"quick_assets/current_liability"`
+
+-   `"cash/current_liability"`
+
+#### **Reasoning Evaluation**:
+
+##### **1. Similarity**
+
+-   **`quick_assets/current_liability`**:
+
+    -   Measures the ability to cover current liabilities using **quick assets** (cash + receivables, excludes inventory).
+
+    -   A specific and focused liquidity measure but overlaps conceptually with `"cash/current_liability"`.
+
+-   **`cash/current_liability`**:
+
+    -   Focuses solely on **cash coverage** of current liabilities, offering a sharper view of liquidity in extreme financial distress.
+
+    -   More relevant in bankruptcy prediction as cash is the most liquid asset.
+
+##### **2. Domain Relevance**
+
+-   While both are liquidity measures, `"cash/current_liability"` is more interpretable and relevant for assessing immediate solvency during financial crises.
+
+-   `"quick_assets/current_liability"` provides a broader view but overlaps with general liquidity ratios like `"current_ratio"`.
+
+##### **3. Bankruptcy Context**
+
+-   Cash flow problems are a leading indicator of bankruptcy. `"cash/current_liability"` directly reflects this and aligns better with the bankruptcy prediction context.
+
+#### **Decision**:
+
+-   **Keep**: `"cash/current_liability"` for its sharper focus and relevance in financial distress.
+
+-   **Drop**: `"quick_assets/current_liability"` as it adds little unique value.
+
+```{r}
+# Correlation check for liquidity variables
+liquidity_vars <- c("quick_assets/current_liability", "cash/current_liability")
+
+liquidity_correlations <- correlation_df %>%
+  filter(Feature1 %in% liquidity_vars & Feature2 %in% liquidity_vars)
+
+print(liquidity_correlations)
+
+# Drop redundant liquidity variable
+bankruptcy_df <- bankruptcy_df %>%
+  select(-c("quick_assets/current_liability"))
+
+```
+
+### **Leverage Variables**
+
+#### **Variables**:
+
+-   `"liability-assets_flag"`
+
+-   `"debt_ratio_%"`
+
+-   `"current_liabilities/liability"`
+
+#### **Reasoning Evaluation**:
+
+##### **1. Similarity**
+
+-   **`liability-assets_flag`**:
+
+    -   A binary flag indicating whether liabilities exceed assets.
+
+    -   Less detailed than `"debt_ratio_%"` and provides no gradation.
+
+-   **`debt_ratio_%`**:
+
+    -   Measures the proportion of liabilities to assets as a percentage.
+
+    -   A detailed and commonly used metric for assessing leverage.
+
+-   **`current_liabilities/liability`**:
+
+    -   Measures the proportion of short-term liabilities to total liabilities.
+
+    -   Focused on short-term obligations but overlaps with broader leverage ratios.
+
+##### **2. Domain Relevance**
+
+-   `"debt_ratio_%"` is a standard leverage metric and provides more detailed information than `"liability-assets_flag"`.
+
+-   `"current_liabilities/liability"` adds limited value when broader metrics like `"liability_to_equity"` are included.
+
+##### **3. Bankruptcy Context**
+
+-   Over-reliance on binary flags like `"liability-assets_flag"` is less effective in modeling bankruptcy risk. Ratios like `"debt_ratio_%"` are more precise and insightful.
+
+#### **Decision**:
+
+-   **Keep**: `"debt_ratio_%"`.
+
+-   **Drop**:
+
+    -   `"liability-assets_flag"`: Adds little value compared to `"debt_ratio_%"`.
+
+    -   `"current_liabilities/liability"`: Redundant when `"debt_ratio_%"` and `"liability_to_equity"` are included.
+
+```{r}
+# Correlation check for leverage variables
+leverage_vars <- c("liability-assets_flag", "debt_ratio_%", "current_liabilities/liability")
+
+leverage_correlations <- correlation_df %>%
+  filter(Feature1 %in% leverage_vars & Feature2 %in% leverage_vars)
+
+print(leverage_correlations)
+
+# Drop redundant leverage variables
+bankruptcy_df <- bankruptcy_df %>%
+  select(-c("liability-assets_flag", "current_liabilities/liability"))
+
+```
+
+### **Profitability Variables**
+
+#### **Variables**:
+
+-   `"operating_profit_per_person"`
+
+-   `"operating_profit_rate"`
+
+-   `"gross_profit_to_sales"`
+
+-   `"operating_gross_margin"`
+
+#### **Reasoning Evaluation**:
+
+##### **1. Similarity**
+
+-   **`operating_profit_per_person`**:
+
+    -   Measures profitability per employee.
+
+    -   Overlaps with broader metrics like `"operating_profit_rate"`.
+
+-   **`operating_profit_rate`**:
+
+    -   Measures operating profit as a percentage of sales.
+
+    -   A widely used and general measure of operating efficiency.
+
+-   **`gross_profit_to_sales`**:
+
+    -   Measures gross profit as a percentage of sales.
+
+    -   Overlaps with `"operating_gross_margin"`.
+
+-   **`operating_gross_margin`**:
+
+    -   Represents the gross margin from operations.
+
+    -   Slightly broader than `"gross_profit_to_sales"`.
+
+##### **2. Domain Relevance**
+
+-   `"operating_profit_rate"` and `"operating_gross_margin"` are standard metrics in profitability analysis.
+
+-   `"operating_profit_per_person"` is redundant when overall profitability ratios are already included.
+
+-   `"gross_profit_to_sales"` overlaps with `"operating_gross_margin"`.
+
+##### **3. Bankruptcy Context**
+
+-   Operating profitability is crucial in assessing a firm’s ability to sustain operations. Broader metrics like `"operating_profit_rate"` and `"operating_gross_margin"` are sufficient.
+
+#### **Decision**:
+
+-   **Keep**: `"operating_profit_rate"`, `"operating_gross_margin"`.
+
+-   **Drop**:
+
+    -   `"operating_profit_per_person"`: Too narrow.
+
+    -   `"gross_profit_to_sales"`: Redundant.
+
+```{r}
+# Correlation check for profitability variables
+profitability_vars <- c("operating_profit_per_person", "operating_profit_rate", "gross_profit_to_sales", "operating_gross_margin")
+
+profitability_correlations <- correlation_df %>%
+  filter(Feature1 %in% profitability_vars & Feature2 %in% profitability_vars)
+
+print(profitability_correlations)
+
+# Drop redundant profitability variables
+bankruptcy_df <- bankruptcy_df %>%
+  select(-c("operating_profit_per_person", "gross_profit_to_sales"))
+
+```
+
+### **Efficiency Variables**
+
+#### **Variables**:
+
+-   `"current_asset_turnover_rate"`
+
+-   `"quick_asset_turnover_rate"`
+
+-   `"total_asset_turnover"`
+
+#### **Reasoning Evaluation**:
+
+##### **1. Similarity**
+
+-   **`current_asset_turnover_rate`**:
+
+    -   Measures the efficiency of current assets in generating sales.
+
+-   **`quick_asset_turnover_rate`**:
+
+    -   Measures the efficiency of quick assets in generating sales.
+
+-   **`total_asset_turnover`**:
+
+    -   Measures the efficiency of total assets in generating sales.
+
+##### **2. Domain Relevance**
+
+-   `"total_asset_turnover"` is the broadest and most interpretable metric.
+
+-   `"current_asset_turnover_rate"` and `"quick_asset_turnover_rate"` are narrower and overlap significantly with `"total_asset_turnover"`.
+
+##### **3. Bankruptcy Context**
+
+-   Broader metrics like `"total_asset_turnover"` are more useful in capturing overall efficiency, making narrower metrics redundant.
+
+#### **Decision**:
+
+-   **Keep**: `"total_asset_turnover"`.
+
+-   **Drop**:
+
+    -   `"current_asset_turnover_rate"`, `"quick_asset_turnover_rate"`.
+
+```{r}
+# Correlation check for efficiency variables
+efficiency_vars <- c("current_asset_turnover_rate", "quick_asset_turnover_rate", "total_asset_turnover")
+
+efficiency_correlations <- correlation_df %>%
+  filter(Feature1 %in% efficiency_vars & Feature2 %in% efficiency_vars)
+
+print(efficiency_correlations)
+
+# Drop redundant efficiency variables
+bankruptcy_df <- bankruptcy_df %>%
+  select(-c("current_asset_turnover_rate", "quick_asset_turnover_rate"))
+
+```
+
+```{r}
+dim(bankruptcy_df)
+```
+
+## Data Preparation
+
+The dataset is highly imbalanced, with a very small number of positive samples in the minority class (bankruptcy) compared to the majority class. This imbalance can lead to poor performance of machine learning models, especially when it comes to detecting the minority class. The target variable indicates whether a company will go bankrupt, with the minority class representing the instances of bankruptcy.
+
+To address this issue, SMOTE (Synthetic Minority Over-sampling Technique) is applied to generate synthetic samples for the minority class. SMOTE works by selecting a minority class sample and generating new synthetic instances by interpolating between the sample and its nearest neighbors. This technique helps balance the dataset, which can lead to improved model performance.
+
+Using SMOTE has several benefits. First, it improves model accuracy by making the dataset more balanced, preventing the model from being biased toward the majority class. Second, it enhances the detection of the minority class, improving recall and F1 score for predicting bankruptcy. Third, it aids in better generalization, allowing the model to recognize unseen instances of the minority class. Lastly, SMOTE helps prevent underfitting, as an imbalanced dataset could cause the model to overlook patterns in the minority class.
+
+```{r}
+
+bankruptcy_df$`bankrupt?` <- as.factor(bankruptcy_df$`bankrupt?`) 
+
+# Split the data into training and test sets (80-20 split)
+set.seed(123)  # For reproducibility
+train_index <- createDataPartition(bankruptcy_df$`bankrupt?`, p = 0.8, list = FALSE)
+train_data <- bankruptcy_df[train_index, ]
+test_data <- bankruptcy_df[-train_index, ]
+
+# Create a recipe for SMOTE using the existing `bankrupt?` column
+smote_recipe <- recipe(`bankrupt?` ~ ., data = train_data) %>%
+  step_smote(`bankrupt?`, over_ratio = 1)  # Apply SMOTE to balance the target column
+
+# Prepare and juice the SMOTE data
+smote_data <- prep(smote_recipe) %>%
+  juice()
+
+# Check class distribution after SMOTE
+cat("Class distribution after SMOTE:\n")
+print(table(smote_data$`bankrupt?`))
+
+# Separate features (X) and target (y) in the SMOTE-processed training set
+X_train <- smote_data %>% select(-`bankrupt?`)  # Exclude the target column
+y_train <- smote_data$`bankrupt?`              # Extract the target column
+
+# Separate features (X) and target (y) in the testing set (no SMOTE)
+X_test <- test_data %>% select(-`bankrupt?`)  # Exclude the target column
+y_test <- test_data$`bankrupt?`               # Extract the target column
+
+# Print the dimensions of the training and test sets
+cat("Training set dimensions (after SMOTE):", dim(X_train), "\n")
+cat("Test set dimensions:", dim(X_test), "\n")
+
+
+
+```
+
+## Modeling
+
+### XGBoost
+
+```{r}
+
+# Ensure X_train_smote is a numeric matrix
+X_train<- as.matrix(X_train)
+
+# Check and convert y_train_smote to numeric with 0 and 1 labels
+# Ensure there are no negative or invalid labels
+y_train<- as.numeric(as.factor(y_train)) - 1  # Convert factor to numeric: 0 and 1
+
+# Convert X_test to a numeric matrix
+X_test <- as.matrix(X_test)
+
+# Check and convert y_test to numeric with 0 and 1 labels
+y_test <- as.numeric(as.factor(y_test)) - 1  # Convert factor to numeric: 0 and 1
+
+# Check for class imbalance
+cat("Class distribution in training labels:\n")
+print(table(y_train))
+
+cat("Class distribution in test labels:\n")
+print(table(y_test))
+
+# Validate that both classes (0 and 1) are present
+if (length(unique(y_train)) < 2 || length(unique(y_test)) < 2) {
+  stop("Both classes (0 and 1) must be present in the training and test sets.")
+}
+
+# Create DMatrix for training and testing
+train_matrix <- xgb.DMatrix(data = X_train, label = y_train)
+test_matrix <- xgb.DMatrix(data = X_test, label = y_test)
+
+# Set parameters for XGBoost
+params <- list(
+  objective = "binary:logistic", # Binary classification with logistic regression
+  eval_metric = "auc",          # Evaluation metric: Area Under the Curve
+  eta = 0.1,                    # Learning rate
+  max_depth = 6,                # Maximum depth of trees
+  subsample = 0.8,              # Subsample ratio for the training set
+  colsample_bytree = 0.8        # Subsample ratio of columns
+)
+
+# Train the XGBoost model
+set.seed(123)  # For reproducibility
+xgb_model <- xgb.train(
+  params = params,
+  data = train_matrix,
+  nrounds = 100,                # Number of boosting rounds
+  watchlist = list(
+    train = train_matrix,
+    test = test_matrix
+  ),
+  early_stopping_rounds = 10,   # Stop if no improvement for 10 rounds
+  print_every_n = 10            # Print progress every 10 iterations
+)
+
+# Make predictions on the test set
+pred_probs <- predict(xgb_model, newdata = test_matrix)
+predictions <- ifelse(pred_probs > 0.5, "Bankrupt", "NotBankrupt")
+
+
+# Evaluate model performance
+conf_matrix <- confusionMatrix(
+  factor(predictions, levels = c("NotBankrupt", "Bankrupt")), 
+  factor(y_test, levels = c(0, 1), labels = c("NotBankrupt", "Bankrupt")),
+  positive = "Bankrupt"  # Specify the positive class
+)
+cat("\nConfusion Matrix and Metrics:\n")
+print(conf_matrix)
+
+# Plot feature importance
+importance <- xgb.importance(model = xgb_model)
+cat("\nFeature Importance:\n")
+print(importance)
+xgb.plot.importance(importance)
+
+```
+
+#### Interpretation:
+
+1.  **Model Performance (XGBoost)**:
+
+    -   Test AUC peaked at **0.952** after 25 iterations, indicating strong predictive performance.
+
+    -   Early stopping prevented overfitting, ensuring good generalization.
+
+2.  **Confusion Matrix and Metrics**:
+
+    -   The model has **93.32% accuracy**, and **Recall (Sensitivity)** for the minority class (bankruptcy) is **72.73%**, showing the model performs well in identifying bankrupt companies.
+
+    -   Precision for bankruptcy is **28.83%**, indicating a higher rate of false positives despite using **SMOTE** to address class imbalance.
+
+    -   **Balanced Accuracy** is **83.37%**, reflecting a more balanced evaluation for imbalanced data.
+
+3.  **Feature Importance**:
+
+    -   Key predictors include **Net income to total assets**, **borrowing dependency**, and **retained earnings to total assets**, highlighting the importance of profitability, liquidity, and debt management for bankruptcy prediction.
+
+#### Summary:
+
+The model demonstrates strong performance with high sensitivity for identifying bankrupt companies, aided by **SMOTE** to balance the dataset. While precision for bankruptcy is lower, this trade-off is acceptable in contexts where capturing all potential bankruptcies is crucial. Further techniques like threshold adjustment or cost-sensitive learning can help balance precision and recall. The identified financial features align with common bankruptcy risk factors.
+
+### Hyperparamter Tuning ( XGBoost)
+
+```{r}
+# Set up parallel processing
+cl <- makeCluster(detectCores() - 1)  # Use one less core
+registerDoParallel(cl)
+
+X_train <- as.matrix(X_train)
+y_train_factor <- factor(y_train, levels = c(0, 1), labels = c("NotBankrupt", "Bankrupt"))
+
+# Define cross-validation strategy
+train_control <- trainControl(
+  method = "cv",
+  number = 10,
+  classProbs = TRUE,
+  summaryFunction = twoClassSummary,
+  allowParallel = TRUE
+)
+
+
+# Define hyperparameter grid
+xgb_grid <- expand.grid(
+  nrounds = c(50, 100),         # Focused boosting rounds
+  max_depth = c(3, 6),          # Shallower trees to prevent overfitting
+  eta = c(0.1, 0.3),            # Typical learning rates
+  gamma = c(0, 1),              # Lower values for less pruning
+  colsample_bytree = c(0.8),    # Commonly effective for most datasets
+  min_child_weight = c(1),      # Default value
+  subsample = c(0.8)            # Default value
+)
+
+
+set.seed(123)
+xgb_tuned <- train(
+  x = X_train,                   # Use numeric matrix
+  y = y_train_factor,            # Use factor
+  method = "xgbTree",            # XGBoost method
+  trControl = train_control,     # Cross-validation settings
+  tuneGrid = xgb_grid,           # Hyperparameter grid
+  metric = "ROC",                # Optimize for ROC-AUC
+  verbose = FALSE                # Suppress verbose output
+)
+
+
+# Print best model and hyperparameters
+cat("\nBest Tuned Model:\n")
+print(xgb_tuned)
+cat("\nBest Hyperparameters:\n")
+print(xgb_tuned$bestTune)
+
+# Stop parallel cluster
+stopCluster(cl)
+registerDoSEQ()
+cat("\nParallel cluster stopped, and sequential processing reset.\n")
+
+
+```
+
+```{r}
+# Make predictions on the test set using the tuned model
+pred_probs <- predict(xgb_tuned, newdata = X_test, type = "prob")[, "Bankrupt"]  # Predicted probabilities
+predictions <- ifelse(pred_probs > 0.5, "Bankrupt", "NotBankrupt")  # Predicted classes
+
+conf_matrix <- confusionMatrix(
+  factor(predictions, levels = c("NotBankrupt", "Bankrupt")), 
+  factor(y_test, levels = c(0, 1), labels = c("NotBankrupt", "Bankrupt")),
+  positive = "Bankrupt"  # Specify the positive class
+)
+# Print confusion matrix and metrics
+cat("\nConfusion Matrix and Metrics:\n")
+print(conf_matrix)
+
+```
+
+```{r}
+library(pROC)
+
+# Calculate the ROC curve
+roc_curve <- roc(y_test, pred_probs, levels = c(0, 1), direction = "<")
+
+# Plot the ROC curve
+plot(
+  roc_curve,
+  col = "blue",             # ROC curve color
+  lwd = 2,                  # Line width
+  main = "ROC Curven",  # Title
+  legacy.axes = TRUE        # Use (1-Specificity, Sensitivity) on axes
+)
+
+# Add a diagonal line for random guessing
+abline(a = 0, b = 1, col = "red", lty = 2)
+
+# Calculate and display AUC
+auc_value <- auc(roc_curve)
+cat("AUC:", auc_value, "\n")
+
+# Add AUC to the plot
+text(0.6, 0.2, paste("AUC =", round(auc_value, 3)), col = "blue", cex = 1.2)
+
+
+```
+
+#### Interpretation:
+
+After hyperparameter tuning, the model's performance decreased compared to the previous version:
+
+1.  **Accuracy**: The accuracy improved slightly to **96.63%**, but this metric is less meaningful given the dataset's imbalance.
+
+2.  **Sensitivity (Recall)**: Sensitivity dropped to **61.36%** from **72.73%**, indicating the tuned model performs worse in identifying bankrupt companies, which is critical for this problem.
+
+3.  **Balanced Accuracy**: Decreased to **79.58%** from **83.37%**, highlighting a decline in the model's ability to balance sensitivity and specificity.
+
+4.  **Precision (Positive Predictive Value)**: Precision decreased to **48.21%**, suggesting the model generates more false positives than before.
+
+5.  **Kappa**: Improved slightly to **0.5227**, but this small increase does not outweigh the drop in recall.
+
+#### Decision:
+
+Given that recall (sensitivity) is critical for detecting bankruptcies, the tuned model underperforms compared to the previous model. Therefore, it is more prudent to stick with the **previous model**, which had better recall and balanced accuracy, ensuring better identification of the minority class (bankruptcy).
+
+### Logistic Regression
+
+```{r}
+LR_model <- glm(y_train ~ ., data = data.frame(X_train), family = binomial)
+prob <- predict(LR_model, data.frame(X_test), type = "response")
+predictions <- ifelse(prob > 0.5, 1, 0)
+conf_matrix <- confusionMatrix(
+  factor(predictions, levels = c(0, 1), labels = c("NotBankrupt", "Bankrupt")),
+  factor(y_test, levels = c(0, 1), labels = c("NotBankrupt", "Bankrupt")),
+  positive = "Bankrupt"
+)
+cat("\nConfusion Matrix and Metrics:\n")
+print(conf_matrix)
+```
+
+#### Interpretation of Logistic Regression (in light of XGBoost):
+
+Logistic regression achieves a recall of **75%**, slightly higher than XGBoost's **72.73%**, indicating it detects slightly more bankruptcy cases. This is important when prioritizing the identification of all potential bankruptcies. However, its precision is much lower at **18.75%** compared to XGBoost's **28.83%**, leading to a higher false positive rate.
+
+The overall balanced accuracy of logistic regression is **82.08%**, slightly lower than XGBoost's **83.37%**, reflecting that XGBoost handles the trade-off between sensitivity and specificity better. Additionally, the **Kappa score** for logistic regression is **0.2619**, considerably lower than XGBoost's **0.3844**, showing weaker agreement between predictions and actual labels.
+
+While logistic regression is simpler and interpretable, it underperforms compared to XGBoost in terms of overall predictive power, particularly in precision and balanced accuracy. This indicates that XGBoost remains the better choice for this problem, especially when aiming for a balanced approach to detecting bankruptcies while minimizing false positives.
+
+### Hyperparameter Tuning ( Logistic Regression )
+
+```{r}
+# Ensure the data is in matrix format for glmnet
+X_train_matrix <- as.matrix(X_train)
+X_test_matrix <- as.matrix(X_test)
+
+# Define a grid for regularization hyperparameters
+tune_grid <- expand.grid(
+  alpha = c(0, 0.5, 1),  # L1 (Lasso), L2 (Ridge), or Elastic Net (Combination)
+  lambda = seq(0.001, 0.1, length = 10)  # Regularization strength
+)
+
+# Define cross-validation settings
+train_control <- trainControl(
+  method = "cv",          # Cross-validation
+  number = 5,             # Number of folds
+  verboseIter = TRUE,     # Show progress
+  classProbs = TRUE,      # Compute class probabilities
+  summaryFunction = twoClassSummary # Use AUC for evaluation
+)
+
+# Train the logistic regression model with hyperparameter tuning
+set.seed(123)
+logistic_model <- train(
+  x = X_train_matrix,
+  y = factor(y_train, levels = c(0, 1), labels = c("NotBankrupt", "Bankrupt")),
+  method = "glmnet",
+  tuneGrid = tune_grid,
+  trControl = train_control,
+  metric = "ROC"  # Optimize for ROC-AUC
+)
+
+# Print the best hyperparameters
+cat("\nBest Hyperparameters:\n")
+print(logistic_model$bestTune)
+
+# Make predictions on the test set
+probabilities <- predict(logistic_model, X_test_matrix, type = "prob")[, "Bankrupt"]
+predictions <- ifelse(probabilities > 0.5, 1, 0)
+
+# Evaluate model performance
+conf_matrix <- confusionMatrix(
+  factor(predictions, levels = c(0, 1), labels = c("NotBankrupt", "Bankrupt")),
+  factor(y_test, levels = c(0, 1), labels = c("NotBankrupt", "Bankrupt")),
+  positive = "Bankrupt"
+)
+
+cat("\nConfusion Matrix and Metrics:\n")
+print(conf_matrix)
+
+```
+
+```{r}
+# Calculate the ROC curve
+roc_curve <- roc(y_test, probabilities)
+
+# Plot the ROC curve
+plot(roc_curve, col = "blue", lwd = 2, main = "ROC Curve for Logistic Regression")
+abline(a = 0, b = 1, col = "red", lty = 2)  # Random guessing line
+auc_value <- auc(roc_curve)
+
+# Add AUC to the plot
+text(0.6, 0.2, paste("AUC =", round(auc_value, 3)), col = "blue", cex = 1.2)
+```
+
+#### Interpretation of Logistic Regression (After Tuning):
+
+1.  **Recall**: Improved to **86.36%**, higher than XGBoost's **72.73%**, making it better at detecting bankruptcies.
+
+2.  **Precision**: Increased slightly to **19.69%**, but still lower than XGBoost's **28.83%**, indicating more false positives.
+
+3.  **Balanced Accuracy**: Improved to **87.31%**, surpassing XGBoost's **83.37%**, showing better trade-off between recall and specificity.
+
+4.  **Kappa**: Improved to **0.283**, but still lower than XGBoost's **0.3844**, indicating weaker overall agreement.
+
+#### Summary:
+
+Logistic regression (after tuning) excels in recall and balanced accuracy, making it suitable for bankruptcy detection. However, XGBoost remains better in precision and overall agreement. Choose logistic regression for recall-focused tasks or XGBoost for a balanced approach.
+
+## Ensemble Method: Average Probabilities
+
+Ensembling logistic regression and XGBoost by averaging their probabilities leverages the strengths of both models to improve overall performance:
+
+```{r}
+# Logistic model probabilities for the positive class (Bankrupt)
+log_probs_test <- predict(logistic_model, X_test_matrix, type = "prob")[, "Bankrupt"]
+
+# XGBoost model probabilities for the positive class (Bankrupt)
+xgb_probs_test <- predict(xgb_model, newdata = test_matrix)
+
+# Combine probabilities using averaging
+ensemble_probs_test <- (log_probs_test + xgb_probs_test) / 2
+
+# Generate ensemble predictions (Bankrupt if probability > 0.5)
+ensemble_predictions <- ifelse(ensemble_probs_test > 0.5, "Bankrupt", "NotBankrupt")
+
+# Evaluate the ensemble model performance
+ensemble_conf_matrix <- confusionMatrix(
+  factor(ensemble_predictions, levels = c("NotBankrupt", "Bankrupt")), 
+  factor(y_test, levels = c(0, 1), labels = c("NotBankrupt", "Bankrupt")),
+  positive = "Bankrupt"  # Specify the positive class
+)
+
+# Print ensemble confusion matrix and metrics
+cat("\nEnsemble Model Confusion Matrix and Metrics:\n")
+print(ensemble_conf_matrix)
+
+```
+
+### Interpretation of Ensemble Model Results:
+
+#### **Performance Metrics**:
+
+1.  **Accuracy**:
+
+    -   The ensemble model achieves an accuracy of **92%**, indicating strong overall performance, but this metric is less meaningful for imbalanced datasets.
+
+2.  **Sensitivity (Recall)**:
+
+    -   **81.82%**, showing the model effectively identifies bankrupt companies. This is a balance between logistic regression's high recall (86.36%) and XGBoost's (72.73%).
+
+3.  **Specificity**:
+
+    -   **92.34%**, meaning the model correctly identifies non-bankrupt companies with high reliability, balancing the strengths of XGBoost's specificity.
+
+4.  **Precision (Positive Predictive Value)**:
+
+    -   **26.28%**, slightly lower than XGBoost's **28.83%**, but higher than logistic regression's **19.69%**. This indicates fewer false positives compared to logistic regression.
+
+5.  **Balanced Accuracy**:
+
+    -   **87.08%**, higher than XGBoost (**83.37%**) and comparable to logistic regression after tuning (**87.31%**), demonstrating a well-balanced trade-off between recall and specificity.
+
+6.  **Kappa**:
+
+    -   **0.3668**, reflecting moderate agreement between predicted and actual classes, better than logistic regression but slightly below XGBoost.
+
+#### **Strengths of the Ensemble**:
+
+-   By combining logistic regression and XGBoost, the ensemble captures the high recall of logistic regression while improving precision and overall balanced accuracy.
+
+-   The ensemble leverages the diversity of models to achieve robust performance, mitigating the weaknesses of individual models.
+
+#### **Summary**:
+
+The ensemble model balances recall and precision effectively, achieving high sensitivity (81.82%) and balanced accuracy (87.08%). It outperforms both logistic regression and XGBoost individually in terms of recall and balanced accuracy, making it a robust choice for bankruptcy prediction. This approach ensures the minority class (bankruptcy) is well-detected while minimizing false positives compared to logistic regression.
