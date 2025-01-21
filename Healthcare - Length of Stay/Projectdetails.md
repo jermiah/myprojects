@@ -50,7 +50,7 @@ The project involves the following steps:
 
 4. **Prediction and Saving Models**:
    - Generate LOS predictions for test cases.
-   - Save the models for later use.
+   - Saving the models for later use.
 
 ## **Acknowledgements**
 This problem statement and dataset were sourced from a hackathon hosted on **Analytics Vidhya**. You can find more details about the challenge [here](https://datahack.analyticsvidhya.com/contest/janatahack-healthcare-analytics-ii/#ProblemStatement).
