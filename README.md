@@ -66,8 +66,7 @@ Predicts the likelihood of bankruptcy for companies to aid in risk assessment an
 
 ---
 **Project Directory:**  
-[Bankruptcy Prediction](./Bankruptcy_Prediction/Projectdetails.md)
-
+- [Bankruptcy Prediction](./Bankruptcy%20Prediction/Projectdetails.md)
 
 ## **Contributing**
 Contributions are welcome! Fork the repository, make your changes, and submit a pull request. For major changes, open an issue for discussion.
