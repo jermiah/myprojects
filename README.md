@@ -15,8 +15,8 @@ For Git and GitHub setup:
 ├── README.md                       # Main documentation
 ├── docs/
    ├── Github.md                    # Git and GitHub setup instructions
-├── Healthcare - Length of Stay     # A project on predicting the length of stay of a patient
 ├── Bankruptcy_Prediction           # A project on predicting bankruptcy for companies
+├── Healthcare - Length of Stay     # A project on predicting the length of stay of a patient
 └── ...
 ```
 
