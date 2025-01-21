@@ -1,4 +1,4 @@
-# Length of Stay (LOS) Prediction Project (Tuning and ensembling are under development)
+# Length of Stay (LOS) Prediction Project
 
 To maintain clean and organized code, functions are implemented in separate .py files and imported into the main script. 
 The main code is available in the [LOS Prediction Notebook](./Code/LOS%20Prediction.ipynb)
@@ -46,10 +46,11 @@ The project involves the following steps:
 3. **Model Development**:
    - Train multiple classification models such as RandomForest, GradientBoosting, XGBoost, and CatBoost.
    - Evaluate models using accuracy, precision, recall, and F1-score.
+    (Tuning and ensembling are under development)
 
-4. **Prediction and Submission**:
+4. **Prediction and Saving Models**:
    - Generate LOS predictions for test cases.
-   - Create a submission file in the required format.
+   - Save the models for later use.
 
 ## **Acknowledgements**
 This problem statement and dataset were sourced from a hackathon hosted on **Analytics Vidhya**. You can find more details about the challenge [here](https://datahack.analyticsvidhya.com/contest/janatahack-healthcare-analytics-ii/#ProblemStatement).
