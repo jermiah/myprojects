@@ -38,22 +38,7 @@ For Git and GitHub setup:
   - Insights and interpretation
 
 ---
-
-## **Projects**
-
-### **1. Patient Length of Stay Prediction**
-
-#### **Summary:**
-Predicts hospital patient length of stay (LOS) to enhance resource allocation and care management.
-
-#### **Highlights:**
-- **Data:** Patient and hospital records categorized into 11 LOS classes.
-- **Methods:** Logistic Regression, Random Forest, Gradient Boosting, LightGBM, CatBoost, SVM, XGBoost.
-- **Evaluation:** Accuracy, Precision, Recall, F1 Score, ROC AUC.
----
-**Project Directory:** -[Patient Length of Stay Prediction](./Healthcare%20-%20Length%20of%20Stay/Projectdetails.md)
-
-### 2. Bankruptcy Prediction
+### **1. Bankruptcy Prediction**
 
 #### Summary
 Predicts the likelihood of bankruptcy for companies to aid in risk assessment and financial planning.
@@ -64,7 +49,22 @@ Predicts the likelihood of bankruptcy for companies to aid in risk assessment an
 - **Evaluation:** Accuracy, Precision, Recall, F1 Score, and model interpretation using ensemble predictions.
 
 ---
-**Project Directory:** -[Bankruptcy Prediction](./Bankruptcy%20Prediction/Projectdetails.md)
+**Project Directory:**  [Bankruptcy Prediction](./Bankruptcy%20Prediction/Projectdetails.md)
+
+## **Projects**
+
+### **2. Patient Length of Stay Prediction**
+
+#### **Summary:**
+Predicts hospital patient length of stay (LOS) to enhance resource allocation and care management.
+
+#### **Highlights:**
+- **Data:** Patient and hospital records categorized into 11 LOS classes.
+- **Methods:** Logistic Regression, Random Forest, Gradient Boosting, LightGBM, CatBoost, SVM, XGBoost.
+- **Evaluation:** Accuracy, Precision, Recall, F1 Score, ROC AUC.
+---
+**Project Directory:**  [Patient Length of Stay Prediction](./Healthcare%20-%20Length%20of%20Stay/Projectdetails.md)
+
 
 ## **Contributing**
 Contributions are welcome! Fork the repository, make your changes, and submit a pull request. For major changes, open an issue for discussion.
