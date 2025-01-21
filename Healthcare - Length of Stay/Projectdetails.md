@@ -1,6 +1,7 @@
-# Length of Stay (LOS) Prediction Project
+# Length of Stay (LOS) Prediction Project (Tuning and ensembling are under development)
 
-Codes are available in [LOS Prediction Notebook](./Code)
+To maintain clean and organized code, functions are implemented in separate .py files and imported into the main script. 
+The main code is available in the [LOS Prediction Notebook](./Code/LOS%20Prediction.ipynb)
 
 ## **Introduction**
 This analysis focuses on predicting Patients' Length of Stay (LOS) during the COVID-19 Pandemic. The COVID-19 pandemic overloaded hospital care resources and efficient resource management and allocation are vital to stablizing the healthcare system. The objective of this analysis is to develop machine learning models to predict LOS to help improve resource allocation since LOS is an important indiactor for monitoring health management processes.
