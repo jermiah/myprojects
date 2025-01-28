@@ -1,8 +1,6 @@
 from sklearn.inspection import permutation_importance
 import pandas as pd
 
-
-
 def aggregate_feature_importance(models, X_train_encoded, X_train_non_encoded, selected_models):
     """
     Aggregates feature importance from selected trained models.
@@ -73,8 +71,6 @@ def aggregate_feature_importance(models, X_train_encoded, X_train_non_encoded, s
             print(f"{df_name} processed. Total features: {df.shape[0]}.")
 
     return encoded_df, non_encoded_df
-
-
 
 
 def calculate_permutation_importance(model_name, feature_sets, X_test, y_test):
