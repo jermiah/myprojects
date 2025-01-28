@@ -18,7 +18,7 @@ def aggregate_feature_importance(models, X_train_encoded, X_train_non_encoded, s
         - One for models using encoded data.
         - One for models using non-encoded data.
     """
-    import pandas as pd
+
 
     # Initialize DataFrames for encoded and non-encoded models
     encoded_df, non_encoded_df = pd.DataFrame(), pd.DataFrame()
@@ -93,35 +93,35 @@ def calculate_permutation_importance(model_name, feature_sets, X_test, y_test):
     - DataFrame: Aggregated permutation importance for each model.
     """
     # Initialize an empty DataFrame to store permutation importances
-        perm_df = pd.DataFrame()
-
- 
-
-        # Get the features specific to the model
-        selected_features = feature_sets[model_name]
-        X_test_selected = X_test[selected_features]
-
-        # Calculate permutation importance
-        perm = permutation_importance(
-            model,
-            X_test_selected,
-            y_test,
-            n_repeats=100,  # Number of shuffles
-            random_state=42,
-            scoring="f1",  # Adjust scoring metric as needed
-        )
-
-        # Create a DataFrame for the model's permutation importance
-        perm_df = pd.DataFrame({
-            "Feature": selected_features,
-            "Importance Mean": perm.importances_mean
-        })
+    perm_df = pd.DataFrame()
 
 
 
+    # Get the features specific to the model
+    selected_features = feature_sets[model_name]
+    X_test_selected = X_test[selected_features]
 
-        perm_df.sort_values(by="Average_Importance", ascending=False, inplace=True)
+    # Calculate permutation importance
+    perm = permutation_importance(
+        model,
+        X_test_selected,
+        y_test,
+        n_repeats=100,  # Number of shuffles
+        random_state=42,
+        scoring="f1",  # Adjust scoring metric as needed
+    )
 
-        print(f"Permutation importance calculation completed. Total features: {perm_df.shape[0]}.")
+    # Create a DataFrame for the model's permutation importance
+    perm_df = pd.DataFrame({
+        "Feature": selected_features,
+        "Importance Mean": perm.importances_mean
+    })
+
+
+
+
+    perm_df.sort_values(by="Average_Importance", ascending=False, inplace=True)
+
+    print(f"Permutation importance calculation completed. Total features: {perm_df.shape[0]}.")
 
     return perm_df

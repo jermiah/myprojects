@@ -1,9 +1,8 @@
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import math
-from sklearn.preprocessing import LabelEncoder
+import seaborn as sns
 
 def summarize_nulls_and_modalities(df, columns):
     
@@ -33,18 +32,14 @@ def summarize_nulls_and_modalities(df, columns):
     return null_summary
 
 def get_descriptions_for_variables(df, variables):
-    # Select the first two columns by their positional indices
+   
     subset_df = df.iloc[:, :2]  # This selects all rows and the first two columns
 
     # Filter the subset DataFrame where the first column matches the 'variables' list
     result_df = subset_df[subset_df.iloc[:, 0].isin(variables)]
 
-    # Return the resulting DataFrame with reset index
     return result_df.reset_index(drop=True)
 
-import math
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 def plot_categorical_variables(data, categorical_variables, orientation='vertical'):
 
@@ -54,11 +49,10 @@ def plot_categorical_variables(data, categorical_variables, orientation='vertica
 
     fig, axes = plt.subplots(rows, cols, figsize=(cols * 6, rows * 5))
 
-    # Ensure axes is iterable
     if num_vars == 1:
         axes = [axes]  # Wrap single Axes object in a list
     else:
-        axes = axes.flatten()  # Flatten axes array
+        axes = axes.flatten() 
 
     for i, variable in enumerate(categorical_variables):
         ax = axes[i]
@@ -102,14 +96,8 @@ def plot_categorical_variables(data, categorical_variables, orientation='vertica
     plt.show()
     
 def plot_numerical_variables(data, numerical_variables):
-    """
-    Plots histograms for numerical variables in a layout similar to the categorical variables plot.
-    Includes a dynamic layout with data labels for each variable.
-    
-    Parameters:
-        data (DataFrame): The dataset containing the variables.
-        numerical_variables (list): List of numerical variable names to plot.
-    """
+  
+  
     num_vars = len(numerical_variables)
     cols = math.ceil(math.sqrt(num_vars))  # Calculate number of columns
     rows = math.ceil(num_vars / cols)     # Calculate number of rows
@@ -124,9 +112,9 @@ def plot_numerical_variables(data, numerical_variables):
 
     for i, variable in enumerate(numerical_variables):
         ax = axes[i]
+        
         # Plot the histogram with KDE (kernel density estimate)
         sns.histplot(data[variable], kde=True, ax=ax, color='skyblue', alpha=0.7)
-
         ax.set_title(f'Distribution of {variable}')
         ax.set_xlabel(variable)
         ax.set_ylabel('Density')
@@ -144,9 +132,7 @@ def plot_numerical_variables(data, numerical_variables):
     plt.show()
      
 def plot_correlation_heatmap(data):
-    """
-    Plots the correlation heatmap for numerical variables in the dataset.
-    """
+   
     plt.figure(figsize=(10, 8))
     corr_matrix = data.corr()
     sns.heatmap(corr_matrix, annot=False, cmap="coolwarm", fmt=".2f", linewidths=0.5)
@@ -156,19 +142,7 @@ def plot_correlation_heatmap(data):
 
 
 def create_pairplot(df, corner=True ):
-    """
-    Creates a Seaborn pairplot for feature relationships grouped by target classes.
-
-    Parameters:
-    - df: DataFrame, the dataset containing features and target column
-    - target_col: str, the name of the target column for grouping
-    - palette: str, color palette for the plot (default is 'Set2')
-    - corner: bool, whether to show only the lower triangle of the plot (default is True)
-    - title: str, title of the pairplot (default is "Pairplot of Features Grouped by Target Class")
-
-    Returns:
-    - None
-    """
+    
     sns.pairplot(df, corner=corner)
 
     plt.show()
