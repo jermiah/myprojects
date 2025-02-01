@@ -1,7 +1,7 @@
 # Data Science and AI Projects
 
 ## **Overview**
-This repository contains machine learning and deep learning projects that explore various models, techniques, and libraries across different domains. It highlights diverse applications, including advanced neural networks, and workflows for solving problems efficiently and effectively.
+This repository contains a collection of Machine Learning (ML), Deep Learning (DL), and Optimization projects, covering various domains and real-world applications. Each project explores different models, techniques, and libraries to solve complex problems efficiently.
 
 ---
 
