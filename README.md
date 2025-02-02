@@ -93,7 +93,7 @@ Optimizing the production and distribution network for CoolWipes using **Gurobi*
 - How can AI and smart technologies improve supply chain efficiency?
 
 ---
-**Project Directory:**  [Cool Wipes - Linear Programming](./Cool%20Wipes%20-%20Linear%20Programming/Projectdetails.md)
+**Project Directory:**  [Cool Wipes - Linear Programming](./Cool%20Wipes%20-%20Linear%20Programming)
 
 ---
 
