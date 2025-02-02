@@ -51,7 +51,7 @@ Predicts the likelihood of bankruptcy for companies to aid in risk assessment an
 
 ---
 **Project Directory:**  [Bankruptcy Prediction](./Bankruptcy%20Prediction/Projectdetails.md)
-
+---
 ## **Projects**
 
 ### **2. Patient Length of Stay Prediction**
