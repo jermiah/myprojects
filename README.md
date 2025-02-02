@@ -10,6 +10,7 @@ For Git and GitHub setup:
 
 ## **Project Structure**
 
+```plaintext
 /
 ├── README.md                       # Main documentation
 ├── docs/
@@ -18,6 +19,7 @@ For Git and GitHub setup:
 ├── Healthcare - Length of Stay      # A project on predicting the length of stay of a patient
 ├── Cool Wipes - Linear Programming  # A new project related to Cool Wipes
 └── ...
+```
 
 ## **Key Features**
 
