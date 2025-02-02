@@ -10,15 +10,14 @@ For Git and GitHub setup:
 
 ## **Project Structure**
 
-```plaintext
 /
 ├── README.md                       # Main documentation
 ├── docs/
-   ├── Github.md                    # Git and GitHub setup instructions
-├── Bankruptcy_Prediction           # A project on predicting bankruptcy for companies
-├── Healthcare - Length of Stay     # A project on predicting the length of stay of a patient
+│   ├── Github.md                    # Git and GitHub setup instructions
+├── Bankruptcy_Prediction            # A project on predicting bankruptcy for companies
+├── Healthcare - Length of Stay      # A project on predicting the length of stay of a patient
+├── Cool Wipes - Linear Programming  # A new project related to Cool Wipes
 └── ...
-```
 
 ## **Key Features**
 
