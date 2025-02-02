@@ -66,6 +66,36 @@ Predicts hospital patient length of stay (LOS) to enhance resource allocation an
 ---
 **Project Directory:**  [Patient Length of Stay Prediction](./Healthcare%20-%20Length%20of%20Stay/Projectdetails.md)
 
+---
+
+### **3. Cool Wipes - Linear Programming with Gurobi**
+
+#### **Summary**
+Optimizing the production and distribution network for CoolWipes using **Gurobi** to minimize costs while meeting demand across six geographic regions.
+
+#### **Highlights**
+- **Data:** Demand data for wipes and ointments across six regions, current plant capacities, fixed and variable costs, and transportation costs.
+- **Methods:** 
+  - **Gurobi Optimization:** Formulating a linear programming (LP) model to determine the optimal production and distribution strategy.
+  - **Scenario Analysis:** Evaluating cost structures under different transportation cost assumptions.
+- **Evaluation:**
+  - **Baseline Analysis:** Assessing the annual cost of serving the entire nation from Chicago.
+  - **Expansion Decision:** Evaluating the impact of adding new plants in Princeton, Atlanta, or Los Angeles.
+  - **Optimal Network Design:** Recommending the best plant locations and capacities under varying constraints.
+  - **Future Planning:** Projecting network structure for 2026 with a 35% demand increase and next-day delivery.
+
+#### **Key Questions Addressed**
+- What is the cost of serving the nation from a single plant in Chicago?
+- Should additional plants be built? If so, where and with what capacity?
+- How does transportation cost variability influence plant location decisions?
+- What is the best network design if starting from scratch?
+- Can the network support projected demand growth by 2026?
+- How can AI and smart technologies improve supply chain efficiency?
+
+---
+**Project Directory:**  [Cool Wipes - Linear Programming](./Cool%20Wipes%20-%20Linear%20Programming/Projectdetails.md)
+
+---
 
 ## **Contributing**
 Contributions are welcome! Fork the repository, make your changes, and submit a pull request. For major changes, open an issue for discussion.
