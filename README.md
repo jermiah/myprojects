@@ -17,7 +17,7 @@ For Git and GitHub setup:
 │   ├── Github.md                    # Git and GitHub setup instructions
 ├── Bankruptcy_Prediction            # A project on predicting bankruptcy for companies
 ├── Healthcare - Length of Stay      # A project on predicting the length of stay of a patient
-├── Cool Wipes - Linear Programming  # A new project related to Cool Wipes
+├── Cool Wipes - Linear Programming  # A new project on supply chain optimization
 └── ...
 ```
 
