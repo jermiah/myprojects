@@ -1,13 +1,17 @@
-## 🧻 Cool Wipes – Linear Programming Optimization
+## 🧻 Cool Wipes – Production Optimization with Gurobi
 
-This project solves a **linear programming problem** related to the production and distribution of Cool Wipes.  
-It uses the `PuLP` library in Python to minimize costs while meeting hygiene and demand constraints.
+This project models a **linear programming** problem using the **Gurobi Optimizer** to optimize the production and distribution of **Cool Wipes**.  
+The goal is to minimize total costs while meeting demand and respecting resource constraints.
 
-### 📌 Topics Covered
-- Linear Programming
-- Supply Chain Optimization
-- Constraint Modeling with PuLP
-- Cost Minimization
+### ⚙️ Tools & Techniques
+- Linear Programming (LP)
+- Gurobi Optimizer (`gurobipy`)
+- Python + Pandas for data handling
+
+### 📊 Key Features
+- Multi-variable constraint modeling
+- Cost minimization under production limits
+- Clean, readable Gurobi model setup using `quicksum`
 
 ### 🔖 Tags
-`#cool-wipes` `#linear-programming` `#optimization` `#pulp` `#operations-research`
+`#cool-wipes` `#gurobi` `#linear-programming` `#optimization` `#operations-research` `#python`
